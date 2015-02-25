@@ -36,28 +36,36 @@
         </license>
     </licenses>
 
+    <properties>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+      <junit-dep.version>4.11</junit-dep.version>
+      <aws-java-sdk.version>1.9.20.1</aws-java-sdk.version>
+      <storm.version>0.9.3</storm.version>
+      <httpclient.version>4.4</httpclient.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-core</artifactId>
-            <version>0.9.3-rc1</version>
+            <version>${storm.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
-            <version>1.8.11</version>
+            <version>${aws-java-sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit-dep</artifactId>
-            <version>4.8.2</version>
+            <version>${junit-dep.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.3.2</version>
+            <version>${httpclient.version}</version>
         </dependency>
     </dependencies>
 </project>
