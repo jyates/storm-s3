@@ -21,6 +21,7 @@ package org.apache.storm.s3.format;
 import backtype.storm.tuple.ITuple;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * Formats a Tuple object into a byte array
@@ -30,4 +31,5 @@ public interface RecordFormat extends Serializable {
 
     byte[] format(ITuple tuple);
 
+    void prepare(Map stormConf);
 }

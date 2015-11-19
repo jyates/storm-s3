@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,16 +17,18 @@
  */
 package org.apache.storm.s3.format;
 
-import org.apache.storm.s3.output.trident.FileOutputFactory;
+import org.apache.storm.guava.base.Joiner;
 
 /**
  *
  */
 public class DefaultFileNameFormat extends AbstractFileNameFormat {
 
-    @Override
-    public String getName(Object key, String identifier, long rotation, long timeStamp) {
-        return this.path + this.prefix + this.delimiter + identifier + this.delimiter + rotation + this.delimiter + timeStamp + this.extension;
-    }
+  @Override
+  public String getName(Object key, String identifier, long rotation, long timeStamp) {
+    return Joiner.on(this.delimiter)
+                 .join(this.path + this.prefix, identifier, rotation,
+                     timeStamp + this.extension);
+  }
 
 }

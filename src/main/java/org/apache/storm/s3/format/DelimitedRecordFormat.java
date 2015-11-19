@@ -19,6 +19,7 @@ package org.apache.storm.s3.format;
 
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.ITuple;
+import java.util.Map;
 
 /**
  * RecordFormat implementation that uses field and record delimiters.
@@ -83,5 +84,10 @@ public class DelimitedRecordFormat implements RecordFormat {
         }
         sb.append(this.recordDelimiter);
         return sb.toString().getBytes();
+    }
+
+    @Override
+    public void prepare(Map stormConf) {
+        // noop
     }
 }

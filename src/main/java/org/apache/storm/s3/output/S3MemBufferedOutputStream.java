@@ -19,6 +19,8 @@ package org.apache.storm.s3.output;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.apache.storm.s3.format.AbstractFileNameFormat;
+import org.apache.storm.s3.format.S3OutputLocation;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +42,16 @@ public class S3MemBufferedOutputStream<T> extends OutputStream {
 
     public S3MemBufferedOutputStream(Uploader uploader, String bucketName,
                                      AbstractFileNameFormat fileNameFormat, String contentType) {
-
         this.outputStream = new ByteArrayOutputStream();
         this.uploader = uploader;
         this.bucketName = bucketName;
         this.fileNameFormat = fileNameFormat;
         this.contentType = contentType;
+    }
+
+    public S3MemBufferedOutputStream(Uploader uploader, S3OutputLocation s3,
+        AbstractFileNameFormat format) {
+        this(uploader, s3.getBucket(), format, s3.getContentType());
     }
 
     @Override

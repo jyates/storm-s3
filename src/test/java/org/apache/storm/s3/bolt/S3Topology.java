@@ -17,6 +17,15 @@
  */
 package org.apache.storm.s3.bolt;
 
+import org.apache.storm.s3.format.AbstractFileNameFormat;
+import org.apache.storm.s3.format.DefaultFileNameFormat;
+import org.apache.storm.s3.format.DelimitedRecordFormat;
+import org.apache.storm.s3.format.RecordFormat;
+import org.apache.storm.s3.format.S3OutputLocation;
+import org.apache.storm.s3.output.S3Configuration;
+import org.apache.storm.s3.rotation.FileRotationPolicy;
+import org.apache.storm.s3.rotation.FileSizeRotationPolicy;
+
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
@@ -28,6 +37,7 @@ import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,24 +50,30 @@ public class S3Topology {
     static final String TOPOLOGY_NAME = "test-topology";
 
     public static void main(String[] args) throws Exception {
-        Config config = new Config();
-        config.put(PREFIX, "test");
-        config.put(EXTENSION, ".txt");
-        config.put(PATH, "foo");
-        config.put(ROTATION_SIZE, 1.0F);
-        config.put(ROTATION_UNIT, "MB");
-        config.put(BUCKET_NAME, "test-bucket");
-        config.put(CONTENT_TYPE, "text/plain");
-        SentenceSpout spout = new SentenceSpout();
-
+        // setup the bolt
         S3Bolt bolt = new S3Bolt();
+        FileRotationPolicy rotationPolicy = new FileSizeRotationPolicy(1.0F,
+            FileSizeRotationPolicy.Units.MB);
+        bolt.setRotationPolicy(rotationPolicy);
+        AbstractFileNameFormat format = new DefaultFileNameFormat().withExtension(".txt")
+                                                                   .withPrefix("test");
+        bolt.setFileNameFormat(format);
+        RecordFormat recordFormat = new DelimitedRecordFormat();
+        bolt.setRecordFormat(recordFormat);
+        S3OutputLocation s3 =
+            new S3OutputLocation().setBucket("test-bucket")
+                                  .setContentType("text/plain")
+                                  .withPath("foo");
+        bolt.setS3Location(s3);
 
         TopologyBuilder builder = new TopologyBuilder();
 
+        SentenceSpout spout = new SentenceSpout();
         builder.setSpout(SENTENCE_SPOUT_ID, spout, 1);
         // SentenceSpout --> MyBolt
         builder.setBolt(BOLT_ID, bolt, 2).shuffleGrouping(SENTENCE_SPOUT_ID);
 
+        Map config = new HashMap();
         if (args.length == 0) {
             LocalCluster cluster = new LocalCluster();
             cluster.submitTopology(TOPOLOGY_NAME, config, builder.createTopology());

@@ -19,6 +19,7 @@ package org.apache.storm.s3.rotation;
 
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * Used by the S3Bolt to decide when to rotate files.
@@ -43,4 +44,6 @@ public interface FileRotationPolicy extends Serializable {
      * Called after the S3Bolt rotates a file.
      */
     void reset();
+
+    void prepare(Map stormConf);
 }

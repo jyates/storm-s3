@@ -18,6 +18,11 @@
 package org.apache.storm.s3.output;
 
 
+import org.apache.storm.s3.format.AbstractFileNameFormat;
+import org.apache.storm.s3.format.RecordFormat;
+import org.apache.storm.s3.format.S3OutputLocation;
+import org.apache.storm.s3.rotation.FileRotationPolicy;
+
 import backtype.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,17 +34,21 @@ import java.util.Map;
 public class S3Output implements Serializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(S3Output.class);
+    private final FileRotationPolicy fileRotation;
+    private final AbstractFileNameFormat format;
+    private final RecordFormat recordFormat;
+    private final S3OutputLocation s3;
     private int rotation = 0;
     private S3MemBufferedOutputStream out;
     private Uploader uploader;
-    private String contentType = "text/plain";
     private String identifier;
 
-    private S3Configuration configuration;
-
-
-    public S3Output(Map conf) {
-        configuration = new S3Configuration(conf);
+    public S3Output(FileRotationPolicy rotationPolicy, AbstractFileNameFormat fileNameFormat,
+        RecordFormat recordFormat, S3OutputLocation s3Location) {
+        this.fileRotation = rotationPolicy;
+        this.format = fileNameFormat;
+        this.recordFormat = recordFormat;
+        this.s3 = s3Location;
     }
 
     public S3Output withIdentifier(String identifier) {
@@ -48,23 +57,19 @@ public class S3Output implements Serializable {
     }
 
     public void prepare(Map conf) throws IOException {
-        String bucketName = configuration.getBucketName();
-        if (bucketName == null) {
-            throw new IllegalStateException("Bucket name must be specified.");
-        }
-        LOG.info("Preparing S3 Output for bucket {}", bucketName);
+        LOG.info("Preparing S3 Output for bucket {}", s3.getBucket());
         uploader = UploaderFactory.buildUploader(conf);
-        uploader.ensureBucketExists(bucketName);
-        LOG.info("Prepared S3 Output for bucket {} ", bucketName);
+        uploader.ensureBucketExists(s3.getBucket());
+        LOG.info("Prepared S3 Output for bucket {} ", s3.getBucket());
         createOutputFile();
     }
 
     public void write(Tuple tuple) throws IOException {
-        byte[] bytes = configuration.getRecordFormat().format(tuple);
+        byte[] bytes = recordFormat.format(tuple);
         out.write(bytes);
-        if (configuration.getRotationPolicy().mark(bytes.length)) {
+        if (fileRotation.mark(bytes.length)) {
             rotateOutputFile();
-            configuration.getRotationPolicy().reset();
+            fileRotation.reset();
         }
     }
 
@@ -79,8 +84,7 @@ public class S3Output implements Serializable {
     }
 
     private void createOutputFile() throws IOException {
-        this.out = new S3MemBufferedOutputStream(uploader, configuration.getBucketName(),
-                configuration.getFileNameFormat(), contentType);
+        this.out = new S3MemBufferedOutputStream(uploader, s3, format);
     }
 
     private void closeOutputFile() throws IOException {

@@ -19,27 +19,18 @@ package org.apache.storm.s3.format;
 
 import org.apache.storm.s3.output.trident.FileOutputFactory;
 
+import java.io.Serializable;
+import java.util.Map;
+
 /**
  * Created by tastle on 17/12/2014.
  */
-public abstract class AbstractFileNameFormat {
+public abstract class AbstractFileNameFormat implements Serializable{
 
     protected String delimiter = "-";
     protected String path = "storm/";
     protected String prefix = "";
     protected String extension = ".txt";
-    private FileOutputFactory fileOutputFactory = null;
-
-    /**
-     * Overrides the default prefix.
-     *
-     * @param factory
-     * @return
-     */
-    public AbstractFileNameFormat withFileOutputFactory(FileOutputFactory factory) {
-        this.fileOutputFactory = factory;
-        return this;
-    }
 
     /**
      * Overrides the default prefix.
@@ -96,10 +87,7 @@ public abstract class AbstractFileNameFormat {
      */
     public abstract String getName(Object key, String identifier, long rotation, long timeStamp);
 
-    /**
-     * @return the <code>FileOutputFactory</code> or <code>null</code> if none is set.
-     */
-    public FileOutputFactory getFileOutputFactory() {
-        return this.fileOutputFactory;
+    public void prepare(Map stormConf) {
+        // noop
     }
 }
