@@ -22,13 +22,7 @@ import backtype.storm.tuple.Tuple;
 /**
  * Acks all tuples immediately
  */
-public class ImmediateAckManager implements TupleAckManager {
-    private OutputCollector collector;
-
-    @Override
-    public void prepare(OutputCollector collector) {
-        this.collector = collector;
-    }
+public class ImmediateAckManager extends TupleAckManager {
 
     @Override
     public void handleAck(Tuple tuple, boolean committed) {

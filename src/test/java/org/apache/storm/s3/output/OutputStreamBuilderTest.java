@@ -36,8 +36,6 @@ import java.io.OutputStream;
 import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Test that we can upload a file from the stream builder that is either gzipped or regular
  * <p>
@@ -100,7 +98,8 @@ public class OutputStreamBuilderTest {
         String bucket = S3SFileUtils.getBucket(client);
         s3.setBucket(bucket);
 
-        Uploader uploader = new PutRequestUploader(tx.getAmazonS3Client());
+        Uploader uploader = new PutRequestUploader();
+        uploader.setClient(tx.getAmazonS3Client());
         OutputStreamBuilder builder = new OutputStreamBuilder(uploader, s3, "id", fileNameFormat);
         OutputStream out = builder.build(0);
         S3SFileUtils.writeFile(bucket, out);

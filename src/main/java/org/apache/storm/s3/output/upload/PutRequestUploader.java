@@ -18,6 +18,8 @@
 package org.apache.storm.s3.output.upload;
 
 
+import org.apache.storm.guava.util.concurrent.Futures;
+import org.apache.storm.guava.util.concurrent.ListenableFuture;
 import org.apache.storm.s3.output.upload.Uploader;
 
 import com.amazonaws.services.s3.AmazonS3;
@@ -30,8 +32,10 @@ import java.io.InputStream;
 public class PutRequestUploader extends Uploader {
 
     @Override
-    public void upload(String bucketName, String name, InputStream input, ObjectMetadata meta) throws IOException {
+    public ListenableFuture upload(String bucketName, String name, InputStream input,
+          ObjectMetadata meta) throws IOException {
         client.putObject(new PutObjectRequest(bucketName, name, input, meta));
+        return Futures.immediateFuture(null);
     }
 
 }

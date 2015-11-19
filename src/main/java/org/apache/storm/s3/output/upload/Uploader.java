@@ -18,6 +18,9 @@
 package org.apache.storm.s3.output.upload;
 
 
+import org.apache.storm.guava.annotations.VisibleForTesting;
+import org.apache.storm.guava.util.concurrent.ListenableFuture;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentials;
@@ -83,13 +86,25 @@ public abstract class Uploader<T> implements Serializable {
     }
 
 
-    public abstract void upload(String bucketName, String name, InputStream input, ObjectMetadata meta) throws IOException;
+    /**
+     * Upload the input stream to S3.
+     * @param bucketName Bucket to upload to
+     * @param name full name of the file
+     * @param input stream to materialize as a file in S3
+     * @param meta metadata about the request
+     * @return a {@link ListenableFuture} for the completion of the download. The success/failure
+     * of the upload is returned as the result
+     * @throws IOException
+     */
+    public abstract ListenableFuture<Boolean> upload(String bucketName, String name,
+          InputStream input, ObjectMetadata meta) throws IOException;
 
     /**
      * By default the key is ignored, but some implementations might need that information
      */
-    public void upload(T key, String bucketName, String name, InputStream input, ObjectMetadata meta) throws IOException{
-        this.upload(bucketName, name, input, meta);
+    public ListenableFuture<Boolean> upload(T key, String bucketName, String name, InputStream
+          input, ObjectMetadata meta) throws IOException{
+        return this.upload(bucketName, name, input, meta);
     }
 
 
@@ -98,5 +113,10 @@ public abstract class Uploader<T> implements Serializable {
             client.createBucket(bucket);
             LOG.info("Creating bucket {}", bucket);
         }
+    }
+
+    @VisibleForTesting
+    public void setClient(AmazonS3 amazonS3Client) {
+        this.client =amazonS3Client;
     }
 }

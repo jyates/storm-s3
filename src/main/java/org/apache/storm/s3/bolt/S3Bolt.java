@@ -17,12 +17,7 @@
  */
 package org.apache.storm.s3.bolt;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.tuple.Tuple;
-
+import org.apache.storm.guava.util.concurrent.ListenableFuture;
 import org.apache.storm.s3.ack.AckOnRotateManager;
 import org.apache.storm.s3.ack.TupleAckManager;
 import org.apache.storm.s3.format.AbstractFileNameFormat;
@@ -38,6 +33,11 @@ import org.apache.storm.s3.rotation.FileSizeRotationPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.base.BaseRichBolt;
+import backtype.storm.tuple.Tuple;
 import java.io.IOException;
 import java.util.Map;
 
@@ -88,8 +88,8 @@ public class S3Bolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         try {
-            boolean rotated = s3.write(tuple);
-            this.ackPolicy.handleAck(tuple, rotated);
+            ListenableFuture status = s3.write(tuple);
+            this.ackPolicy.handleAck(tuple, status);
         } catch (IOException e) {
             LOG.warn("write/sync failed.", e);
             this.ackPolicy.fail(tuple);

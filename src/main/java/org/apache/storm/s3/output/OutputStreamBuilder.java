@@ -21,7 +21,6 @@ import org.apache.storm.s3.format.S3Output;
 import org.apache.storm.s3.output.upload.Uploader;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Map;
 
 /**
@@ -42,13 +41,14 @@ public class OutputStreamBuilder {
     this.uploader = uploader;
     this.format = fileNameFormat;
     this.s3 = s3Info;
+    this.identifier = identifier;
   }
 
-  public OutputStream build(int rotationNumber) throws IOException {
+  public S3MemBufferedOutputStream build(int rotationNumber) throws IOException {
     ContentEncoding encoding = s3.getEncoding();
-    return encoding.encode(
+    return
         new S3MemBufferedOutputStream<>(uploader, s3.getBucket(), format, s3.getContentType(),
-            encoding.getSuffix(), identifier, rotationNumber));
+              encoding, identifier, rotationNumber);
   }
 
 

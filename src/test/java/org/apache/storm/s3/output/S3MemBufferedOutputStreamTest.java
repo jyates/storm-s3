@@ -17,21 +17,19 @@
  */
 package org.apache.storm.s3.output;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.transfer.TransferManager;
-
 import org.apache.storm.s3.format.DefaultFileNameFormat;
 import org.apache.storm.s3.output.upload.PutRequestUploader;
 import org.apache.storm.s3.output.upload.Uploader;
 
 import org.junit.Test;
 
-import java.io.*;
-
-import static org.junit.Assert.assertEquals;
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Requires ~/.aws/credentials file
@@ -51,9 +49,11 @@ public class S3MemBufferedOutputStreamTest {
 
         String bucketName = S3SFileUtils.getBucket(client);
         TransferManager tx = new TransferManager(client);
-        Uploader uploader = new PutRequestUploader(tx.getAmazonS3Client());
+        Uploader uploader = new PutRequestUploader();
+        uploader.setClient(tx.getAmazonS3Client());
+        ContentEncoding encoding = ContentEncoding.NONE;
         OutputStream outputStream = new S3MemBufferedOutputStream(uploader, bucketName,
-              new DefaultFileNameFormat().withPrefix("test"), "text/plain", "", "id", 0);
+              new DefaultFileNameFormat().withPrefix("test"), "text/plain", encoding, "id", 0);
         S3SFileUtils.writeFile(bucketName, outputStream);
         S3SFileUtils.verifyFile(client, bucketName);
     }

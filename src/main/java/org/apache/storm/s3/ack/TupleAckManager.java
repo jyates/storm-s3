@@ -16,30 +16,55 @@
  */
 package org.apache.storm.s3.ack;
 
+import org.apache.storm.guava.util.concurrent.ListenableFuture;
+
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Tuple;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Manages the actual work of acking tuples back to the collector
  */
-public interface TupleAckManager {
+public abstract class TupleAckManager {
+
+    protected OutputCollector collector;
 
     /**
      * Finish setting up the manager with the output collector
+     *
      * @param collector to use when acking/failing tuples
      */
-    void prepare(OutputCollector collector);
+    public void prepare(OutputCollector collector) {
+        this.collector = collector;
+    }
 
     /**
      * @param committed if the file was committed to the output
-     * @param tuple tbe tuple to ack
+     * @param tuple     tbe tuple to ack
      * @return <tt>true</tt> if this tuple should be acked
      */
-    void handleAck(Tuple tuple, boolean committed);
+    public void handleAck(Tuple tuple, ListenableFuture<Void> committed)
+          throws IOException {
+        try {
+            boolean success = committed != null;
+            if (success) {
+                committed.get();
+            }
+            handleAck(tuple, success);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new IOException(e);
+        }
+    }
+
+    protected void handleAck(Tuple tuple, boolean committedSuccessfully) {
+        // noop - to be implemented to by simple ack managers
+    }
 
     /**
      * Got a failure for the given tuple
+     *
      * @param tuple
      */
-    void fail(Tuple tuple);
+    public abstract void fail(Tuple tuple);
 }

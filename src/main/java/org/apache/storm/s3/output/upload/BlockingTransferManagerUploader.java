@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,6 +17,8 @@
  */
 package org.apache.storm.s3.output.upload;
 
+
+import org.apache.storm.guava.util.concurrent.ListenableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,25 +30,23 @@ import com.amazonaws.services.s3.transfer.model.UploadResult;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
-public class BlockingTransferManagerUploader extends Uploader {
+public class BlockingTransferManagerUploader extends NonBlockingTransferManagerUploader {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BlockingTransferManagerUploader.class);
-
-    private TransferManager tx;
-
-    public void prepare(Map conf){
-        super.prepare(conf);
-        this.tx = new TransferManager(client);
-    }
+    private static final Logger LOG =
+          LoggerFactory.getLogger(BlockingTransferManagerUploader.class);
 
     @Override
-    public void upload(String bucketName, String name, InputStream input, ObjectMetadata meta) throws IOException {
-        final Upload myUpload = tx.upload(bucketName, name, input, meta);
+    public ListenableFuture<Void> upload(String bucketName, String name, InputStream input,
+          ObjectMetadata meta)
+          throws IOException {
+        ListenableFuture<Void> future = super.upload(bucketName, name, input, meta);
         try {
-            UploadResult uploadResult = myUpload.waitForUploadResult();
-            LOG.info("Upload completed, bucket={}, key={}", uploadResult.getBucketName(), uploadResult.getKey());
-        } catch (InterruptedException e) {
+            // block until the future completes
+            future.get();
+            return future;
+        } catch (InterruptedException | ExecutionException e) {
             throw new IOException(e);
         }
     }

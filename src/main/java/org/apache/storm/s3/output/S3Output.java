@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +18,7 @@
 package org.apache.storm.s3.output;
 
 
+import org.apache.storm.guava.util.concurrent.ListenableFuture;
 import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.RecordFormat;
 import org.apache.storm.s3.output.upload.Uploader;
@@ -28,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import backtype.storm.tuple.Tuple;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.Map;
 
@@ -43,11 +43,12 @@ public class S3Output implements Serializable {
     private OutputStreamBuilder streamBuilder;
 
     private int rotation = 0;
-    private OutputStream out;
+    private S3MemBufferedOutputStream out;
     private String identifier;
 
     public S3Output(FileRotationPolicy rotationPolicy, AbstractFileNameFormat fileNameFormat,
-        RecordFormat recordFormat, org.apache.storm.s3.format.S3Output s3Info, Uploader uploader) {
+          RecordFormat recordFormat, org.apache.storm.s3.format.S3Output s3Info,
+          Uploader uploader) {
         this.fileRotation = rotationPolicy;
         this.format = fileNameFormat;
         this.recordFormat = recordFormat;
@@ -68,32 +69,30 @@ public class S3Output implements Serializable {
         createOutputFile();
     }
 
-    public boolean write(Tuple tuple) throws IOException {
+    public ListenableFuture write(Tuple tuple) throws IOException {
         byte[] bytes = recordFormat.format(tuple);
         out.write(bytes);
         boolean rotate = fileRotation.mark(bytes.length);
-        if(rotate){
-            rotateOutputFile();
+        ListenableFuture<Void> status = null;
+        if (rotate) {
+            status = rotateOutputFile();
             fileRotation.reset();
         }
-        return rotate;
+        return status;
     }
 
-    private void rotateOutputFile() throws IOException {
+    private ListenableFuture<Void> rotateOutputFile() throws IOException {
         LOG.info("Rotating output file...");
         long start = System.currentTimeMillis();
-        closeOutputFile();
+        ListenableFuture<Void> committing = out.commit();
         this.rotation++;
         createOutputFile();
         long time = System.currentTimeMillis() - start;
         LOG.info("File rotation took {} ms.", time);
+        return committing;
     }
 
     private void createOutputFile() throws IOException {
         this.out = this.streamBuilder.build(rotation++);
-    }
-
-    private void closeOutputFile() throws IOException {
-        this.out.close();
     }
 }
