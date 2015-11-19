@@ -23,6 +23,8 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 
+import org.apache.storm.s3.ack.AckOnRotatePolicy;
+import org.apache.storm.s3.ack.TupleAckPolicy;
 import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.DefaultFileNameFormat;
 import org.apache.storm.s3.format.DelimitedRecordFormat;
@@ -35,6 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class S3Bolt extends BaseRichBolt {
@@ -49,8 +53,10 @@ public class S3Bolt extends BaseRichBolt {
         FileSizeRotationPolicy.Units.MB);
     private AbstractFileNameFormat fileNameFormat = new DefaultFileNameFormat();
     private RecordFormat recordFormat = new DelimitedRecordFormat();
+    private TupleAckPolicy ackPolicy = new AckOnRotatePolicy();
     // no defaults for the s3 information
     private S3Output s3Location;
+    private List<Tuple> toAck = new ArrayList<>();
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
@@ -62,7 +68,8 @@ public class S3Bolt extends BaseRichBolt {
         recordFormat.prepare(stormConf);
         s3Location.prepare(stormConf);
 
-        s3 = new org.apache.storm.s3.output.S3Output(rotationPolicy, fileNameFormat, recordFormat, s3Location);
+        s3 = new org.apache.storm.s3.output.S3Output(rotationPolicy, fileNameFormat,
+              recordFormat, s3Location, this.ackPolicy);
         String componentId = context.getThisComponentId();
         int taskId = context.getThisTaskId();
         s3.withIdentifier(componentId + "-" + taskId);
@@ -78,11 +85,20 @@ public class S3Bolt extends BaseRichBolt {
     @Override
     public void execute(Tuple tuple) {
         try {
-            s3.write(tuple);
-            this.collector.ack(tuple);
+            if(s3.write(tuple)){
+                ackTuples();
+            }else{
+                this.toAck.add(tuple);
+            }
         } catch (IOException e) {
             LOG.warn("write/sync failed.", e);
             this.collector.fail(tuple);
+        }
+    }
+
+    private void ackTuples() {
+        for(Tuple t: this.toAck){
+            this.collector.ack(t);
         }
     }
 
@@ -105,5 +121,9 @@ public class S3Bolt extends BaseRichBolt {
 
     public void setS3Location(S3Output s3Location) {
         this.s3Location = s3Location;
+    }
+
+    public void setTupleAckPolicy(TupleAckPolicy ackPolicy){
+        this.ackPolicy = ackPolicy;
     }
 }

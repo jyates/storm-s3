@@ -18,6 +18,7 @@
 package org.apache.storm.s3.output;
 
 
+import org.apache.storm.s3.ack.TupleAckPolicy;
 import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.RecordFormat;
 import org.apache.storm.s3.rotation.FileRotationPolicy;
@@ -38,6 +39,7 @@ public class S3Output implements Serializable {
     private final AbstractFileNameFormat format;
     private final RecordFormat recordFormat;
     private final org.apache.storm.s3.format.S3Output s3;
+    private final TupleAckPolicy ackPolicy;
     private OutputStreamBuilder streamBuilder;
 
     private int rotation = 0;
@@ -45,11 +47,12 @@ public class S3Output implements Serializable {
     private String identifier;
 
     public S3Output(FileRotationPolicy rotationPolicy, AbstractFileNameFormat fileNameFormat,
-        RecordFormat recordFormat, org.apache.storm.s3.format.S3Output s3Info) {
+        RecordFormat recordFormat, org.apache.storm.s3.format.S3Output s3Info, TupleAckPolicy ackPolicy) {
         this.fileRotation = rotationPolicy;
         this.format = fileNameFormat;
         this.recordFormat = recordFormat;
         this.s3 = s3Info;
+        this.ackPolicy = ackPolicy;
     }
 
     public S3Output withIdentifier(String identifier) {
@@ -66,13 +69,15 @@ public class S3Output implements Serializable {
         createOutputFile();
     }
 
-    public void write(Tuple tuple) throws IOException {
+    public boolean write(Tuple tuple) throws IOException {
         byte[] bytes = recordFormat.format(tuple);
         out.write(bytes);
-        if (fileRotation.mark(bytes.length)) {
+        boolean rotate = fileRotation.mark(bytes.length);
+        if(rotate){
             rotateOutputFile();
             fileRotation.reset();
         }
+        return this.ackPolicy.shouldAck(tuple, rotate);
     }
 
     private void rotateOutputFile() throws IOException {
