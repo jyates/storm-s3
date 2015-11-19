@@ -16,20 +16,18 @@
  */
 package org.apache.storm.s3.output;
 
+import org.apache.storm.s3.AwsCredentialResource;
+import org.apache.storm.s3.S3DependentTests;
 import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.DefaultFileNameFormat;
 import org.apache.storm.s3.format.S3Output;
 import org.apache.storm.s3.output.upload.PutRequestUploader;
 import org.apache.storm.s3.output.upload.Uploader;
 
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.transfer.TransferManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -38,36 +36,14 @@ import java.util.zip.GZIPInputStream;
 
 /**
  * Test that we can upload a file from the stream builder that is either gzipped or regular
- * <p>
- * Requires  ~/.aws/credentials file
- * <p/>
- * [aws-testing]
- * aws_access_key_id=<ACCESS_KEY>
- * aws_secret_access_key=<SECRET_KEY>
- * </p>
- * That same user/role also needs to be able to have S3 permissions:
- * <ol>
- * <li>CreateBucket</li>
- * <li>PutObject</li>
- * <li>DeleteBucket</li>
- * <li>DeleteObject</li>
- * </ol>
  */
+@Category(S3DependentTests.class)
 public class OutputStreamBuilderTest {
 
-    private static AmazonS3Client client;
-    private static TransferManager tx;
-
+    @ClassRule
+    private static AwsCredentialResource credentials = new AwsCredentialResource();
     private static final AbstractFileNameFormat fileNameFormat = new DefaultFileNameFormat()
           .withPrefix("test");
-
-    @BeforeClass
-    public static void getCredentials() {
-        AWSCredentialsProvider provider = new ProfileCredentialsProvider("aws-testing");
-        ClientConfiguration config = new ClientConfiguration();
-        client = new AmazonS3Client(provider.getCredentials(), config);
-        tx = new TransferManager(client);
-    }
 
     @Test
     public void testNoEncoding() throws Exception {
@@ -91,15 +67,15 @@ public class OutputStreamBuilderTest {
 
     private void verify(String bucket, Function<InputStream, InputStream> decode)
           throws IOException {
-        S3SFileUtils.verifyFile(client, bucket, decode);
+        S3SFileUtils.verifyFile(credentials.getClient(), bucket, decode);
     }
 
     private String write(S3Output s3) throws IOException {
-        String bucket = S3SFileUtils.getBucket(client);
+        String bucket = S3SFileUtils.getBucket(credentials.getClient());
         s3.setBucket(bucket);
 
         Uploader uploader = new PutRequestUploader();
-        uploader.setClient(tx.getAmazonS3Client());
+        uploader.setClient(credentials.getTransferManager().getAmazonS3Client());
         OutputStreamBuilder builder = new OutputStreamBuilder(uploader, s3, "id", fileNameFormat);
         OutputStream out = builder.build(0);
         S3SFileUtils.writeFile(bucket, out);

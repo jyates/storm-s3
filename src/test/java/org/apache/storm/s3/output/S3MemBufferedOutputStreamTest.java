@@ -17,36 +17,30 @@
  */
 package org.apache.storm.s3.output;
 
+import org.apache.storm.s3.AwsCredentialResource;
+import org.apache.storm.s3.S3DependentTests;
 import org.apache.storm.s3.format.DefaultFileNameFormat;
 import org.apache.storm.s3.output.upload.PutRequestUploader;
 import org.apache.storm.s3.output.upload.Uploader;
 
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import java.io.IOException;
 import java.io.OutputStream;
 
-/**
- * Requires ~/.aws/credentials file
- * <p/>
- * <p/>
- * [aws-testing]
- * aws_access_key_id=<ACCESS_KEY>
- * aws_secret_access_key=<SECRET_KEY>
- */
+@Category(S3DependentTests.class)
 public class S3MemBufferedOutputStreamTest {
+
+    @ClassRule
+    private static AwsCredentialResource credentials = new AwsCredentialResource();
 
     @Test
     public void testStream() throws IOException {
-        AWSCredentialsProvider provider = new ProfileCredentialsProvider("aws-testing");
-        ClientConfiguration config = new ClientConfiguration();
-        AmazonS3Client client = new AmazonS3Client(provider.getCredentials(), config);
-
+        AmazonS3Client client = credentials.getClient();
         String bucketName = S3SFileUtils.getBucket(client);
         TransferManager tx = new TransferManager(client);
         Uploader uploader = new PutRequestUploader();

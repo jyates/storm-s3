@@ -15,7 +15,8 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -25,7 +26,7 @@
         <version>7</version>
     </parent>
 
-    <groupId>com.github.wurstmeister</groupId>
+    <groupId>com.github.jyates</groupId>
     <artifactId>storm-s3</artifactId>
     <version>0.0.3-SNAPSHOT</version>
 
@@ -37,27 +38,74 @@
     </licenses>
 
     <properties>
-      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-      <junit-dep.version>4.11</junit-dep.version>
-      <aws-java-sdk.version>1.9.20.1</aws-java-sdk.version>
-      <storm.version>0.9.3</storm.version>
-      <httpclient.version>4.4</httpclient.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <junit-dep.version>4.11</junit-dep.version>
+        <aws-java-sdk.version>1.9.20.1</aws-java-sdk.version>
+        <storm.version>0.9.3</storm.version>
+        <httpclient.version>4.4</httpclient.version>
+        <surefire.version>2.19</surefire.version>
+        <test.output.to.file>true</test.output.to.file>
+        <test.exclude.pattern></test.exclude.pattern>
+        <surefire.s3tests>org.apache.storm.s3.S3DependentTests</surefire.s3tests>
+        <surefire.skipSimpleTests>false</surefire.skipSimpleTests>
+        <surefire.skipS3Tests>true</surefire.skipS3Tests>
     </properties>
 
     <build>
-      <pluginManagement>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>3.3</version>
-            <configuration>
-              <source>1.8</source>
-              <target>1.8</target>
-            </configuration>
-          </plugin>
-        </plugins>
-      </pluginManagement>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.3</version>
+                    <configuration>
+                        <source>1.8</source>
+                        <target>1.8</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <!-- Configuration for two distinct phases of test execution. First phase just
+                     supports local, non-s3 requiring tests. The second phase is just the tests
+                     that require a connection to s3 manipulate buckets/files there. -->
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-surefire-plugin</artifactId>
+                  <version>${surefire.version}</version>
+                  <!-- Generic testing configuration for all packages -->
+                    <configuration>
+                        <redirectTestOutputToFile>${test.output.to.file}</redirectTestOutputToFile>
+                        <skip>true</skip>
+                        <excludes>
+                            <!-- users can add -D option to skip particular test classes
+                           ex: mvn test -Dtest.exclude.pattern=**/TestFoo.java,**/TestBar.java
+                            -->
+                            <exclude>${test.exclude.pattern}</exclude>
+                        </excludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>local-tests</id>
+                            <goals>
+                                <goal>test</goal>
+                            </goals>
+                            <configuration>
+                                <excludedGroups>${surefire.s3tests}</excludedGroups>
+                                <skip>${surefire.skipSimpleTests}</skip>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>s3tests</id>
+                            <goals>
+                                <goal>test</goal>
+                            </goals>
+                            <configuration>
+                                <groups>${surefire.s3tests}</groups>
+                                <skip>${surefire.skipS3Tests}</skip>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
     <dependencies>
@@ -83,10 +131,37 @@
             <artifactId>httpclient</artifactId>
             <version>${httpclient.version}</version>
         </dependency>
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-all</artifactId>
-        <version>1.10.19</version>
-      </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.10.19</version>
+        </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>s3Tests</id>
+            <activation>
+                <property>
+                    <name>s3Tests</name>
+                </property>
+            </activation>
+            <properties>
+                <surefire.skipS3Tests>false</surefire.skipS3Tests>
+            </properties>
+
+        </profile>
+        <profile>
+            <id>skipLocalTests</id>
+            <activation>
+                <property>
+                    <name>skipLocalTests</name>
+                </property>
+            </activation>
+            <properties>
+                <surefire.skipSimpleTests>true</surefire.skipSimpleTests>
+            </properties>
+
+        </profile>
+    </profiles>
 </project>
