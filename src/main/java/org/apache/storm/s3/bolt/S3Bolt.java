@@ -33,12 +33,14 @@ import org.apache.storm.s3.rotation.FileSizeRotationPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import backtype.storm.Config;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 public class S3Bolt extends BaseRichBolt {
@@ -59,6 +61,16 @@ public class S3Bolt extends BaseRichBolt {
     // no defaults for the s3 information
     private S3Output s3Location;
 
+    private int tickFrequencySecs = -1;
+
+    @Override
+    public Map<String, Object> getComponentConfiguration() {
+        Config conf = new Config();
+        if(tickFrequencySecs > 0) {
+            conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, tickFrequencySecs);
+        }
+        return conf;
+    }
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
@@ -123,5 +135,9 @@ public class S3Bolt extends BaseRichBolt {
 
     public void setUploader(Uploader uploader){
         this.uploader = uploader;
+    }
+
+    public void setTickFrequencySecs(int seconds){
+        this.tickFrequencySecs = seconds;
     }
 }

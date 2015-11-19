@@ -27,6 +27,7 @@ import org.apache.storm.s3.rotation.FileRotationPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import backtype.storm.Constants;
 import backtype.storm.tuple.Tuple;
 import java.io.IOException;
 import java.io.Serializable;
@@ -70,9 +71,13 @@ public class S3Output implements Serializable {
     }
 
     public ListenableFuture write(Tuple tuple) throws IOException {
-        byte[] bytes = recordFormat.format(tuple);
-        out.write(bytes);
-        boolean rotate = fileRotation.mark(bytes.length);
+        boolean rotate = !isTickTuple(tuple);
+        if (!rotate) {
+            byte[] bytes = recordFormat.format(tuple);
+            out.write(bytes);
+            rotate = fileRotation.mark(bytes.length);
+        }
+
         ListenableFuture<Void> status = null;
         if (rotate) {
             status = rotateOutputFile();
@@ -94,5 +99,10 @@ public class S3Output implements Serializable {
 
     private void createOutputFile() throws IOException {
         this.out = this.streamBuilder.build(rotation++);
+    }
+
+    private boolean isTickTuple(Tuple tuple) {
+        return tuple.getSourceComponent().equals(Constants.SYSTEM_COMPONENT_ID)
+               && tuple.getSourceStreamId().equals(Constants.SYSTEM_TICK_STREAM_ID);
     }
 }
