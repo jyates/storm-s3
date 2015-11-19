@@ -33,7 +33,11 @@ public class AckOnRotateManager extends TupleAckManager {
     /**
      * List of outstanding tuples to ack
      */
-    private List<Tuple> toAck = new ArrayList<>();
+    private List<Tuple> toAck;
+
+    public AckOnRotateManager(){
+        toAck = new ArrayList<>();
+    }
 
     @Override
     public void handleAck(Tuple tuple, boolean committed) {

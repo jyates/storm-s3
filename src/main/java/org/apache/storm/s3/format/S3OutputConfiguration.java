@@ -25,28 +25,28 @@ import java.util.Map;
 /**
  *
  */
-public class S3Output implements Serializable {
+public class S3OutputConfiguration implements Serializable {
   private String bucket;
   private String contentType = "text/plain";
   private String path;
   private ContentEncoding encoding = ContentEncoding.NONE;
 
-  public S3Output setBucket(String bucket) {
+  public S3OutputConfiguration setBucket(String bucket) {
     this.bucket = bucket;
     return this;
   }
 
-  public S3Output setContentType(String contentType) {
+  public S3OutputConfiguration setContentType(String contentType) {
     this.contentType = contentType;
     return this;
   }
 
-  public S3Output withPath(String path) {
+  public S3OutputConfiguration withPath(String path) {
     this.path = path;
     return this;
   }
 
-  public S3Output withContentEncoding(ContentEncoding encoding){
+  public S3OutputConfiguration withContentEncoding(ContentEncoding encoding){
     this.encoding = encoding;
     return this;
   }

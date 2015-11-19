@@ -21,6 +21,7 @@ package org.apache.storm.s3.output;
 import org.apache.storm.guava.util.concurrent.ListenableFuture;
 import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.RecordFormat;
+import org.apache.storm.s3.format.S3OutputConfiguration;
 import org.apache.storm.s3.output.upload.Uploader;
 import org.apache.storm.s3.rotation.FileRotationPolicy;
 
@@ -39,7 +40,7 @@ public class S3Output implements Serializable {
     private final FileRotationPolicy fileRotation;
     private final AbstractFileNameFormat format;
     private final RecordFormat recordFormat;
-    private final org.apache.storm.s3.format.S3Output s3;
+    private final S3OutputConfiguration s3;
     private final Uploader uploader;
     private OutputStreamBuilder streamBuilder;
 
@@ -48,8 +49,7 @@ public class S3Output implements Serializable {
     private String identifier;
 
     public S3Output(FileRotationPolicy rotationPolicy, AbstractFileNameFormat fileNameFormat,
-          RecordFormat recordFormat, org.apache.storm.s3.format.S3Output s3Info,
-          Uploader uploader) {
+          RecordFormat recordFormat, S3OutputConfiguration s3Info, Uploader uploader) {
         this.fileRotation = rotationPolicy;
         this.format = fileNameFormat;
         this.recordFormat = recordFormat;
@@ -71,7 +71,7 @@ public class S3Output implements Serializable {
     }
 
     public ListenableFuture write(Tuple tuple) throws IOException {
-        boolean rotate = !isTickTuple(tuple);
+        boolean rotate = isTickTuple(tuple);
         if (!rotate) {
             byte[] bytes = recordFormat.format(tuple);
             out.write(bytes);

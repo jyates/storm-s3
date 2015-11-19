@@ -20,7 +20,7 @@ import org.apache.storm.s3.AwsCredentialResource;
 import org.apache.storm.s3.S3DependentTests;
 import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.DefaultFileNameFormat;
-import org.apache.storm.s3.format.S3Output;
+import org.apache.storm.s3.format.S3OutputConfiguration;
 import org.apache.storm.s3.output.upload.PutRequestUploader;
 import org.apache.storm.s3.output.upload.Uploader;
 
@@ -47,14 +47,14 @@ public class OutputStreamBuilderTest {
 
     @Test
     public void testNoEncoding() throws Exception {
-        S3Output s3 = new S3Output();
+        S3OutputConfiguration s3 = new S3OutputConfiguration();
         String bucket = write(s3);
         verify(bucket, input -> input);
     }
 
     @Test
     public void testGzipEncoding() throws Exception {
-        S3Output s3 = new S3Output().withContentEncoding(ContentEncoding.GZIP);
+        S3OutputConfiguration s3 = new S3OutputConfiguration().withContentEncoding(ContentEncoding.GZIP);
         String bucket = write(s3);
         verify(bucket, input -> {
             try {
@@ -70,12 +70,12 @@ public class OutputStreamBuilderTest {
         S3SFileUtils.verifyFile(credentials.getClient(), bucket, decode);
     }
 
-    private String write(S3Output s3) throws IOException {
+    private String write(S3OutputConfiguration s3) throws IOException {
         String bucket = S3SFileUtils.getBucket(credentials.getClient());
         s3.setBucket(bucket);
 
         Uploader uploader = new PutRequestUploader();
-        uploader.setClient(credentials.getTransferManager().getAmazonS3Client());
+        uploader.setClientForTesting(credentials.getTransferManager().getAmazonS3Client());
         OutputStreamBuilder builder = new OutputStreamBuilder(uploader, s3, "id", fileNameFormat);
         OutputStream out = builder.build(0);
         S3SFileUtils.writeFile(bucket, out);

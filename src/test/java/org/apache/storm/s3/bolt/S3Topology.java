@@ -21,27 +21,18 @@ import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.DefaultFileNameFormat;
 import org.apache.storm.s3.format.DelimitedRecordFormat;
 import org.apache.storm.s3.format.RecordFormat;
-import org.apache.storm.s3.format.S3Output;
+import org.apache.storm.s3.format.S3OutputConfiguration;
 import org.apache.storm.s3.output.upload.BlockingTransferManagerUploader;
-import org.apache.storm.s3.output.upload.PutRequestUploader;
 import org.apache.storm.s3.output.upload.Uploader;
 import org.apache.storm.s3.rotation.FileRotationPolicy;
 import org.apache.storm.s3.rotation.FileSizeRotationPolicy;
 
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.topology.base.BaseRichSpout;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Values;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class S3Topology {
     static final String SENTENCE_SPOUT_ID = "sentence-spout";
@@ -63,8 +54,8 @@ public class S3Topology {
         Uploader uploader = new BlockingTransferManagerUploader();
         bolt.setUploader(uploader);
 
-        S3Output s3 =
-            new S3Output().setBucket("test-bucket")
+        S3OutputConfiguration s3 =
+            new S3OutputConfiguration().setBucket("test-bucket")
                                   .setContentType("text/plain")
                                   .withPath("foo");
         bolt.setS3Location(s3);
@@ -98,55 +89,4 @@ public class S3Topology {
         }
     }
 
-    public static class SentenceSpout extends BaseRichSpout {
-        private ConcurrentHashMap<UUID, Values> pending;
-        private SpoutOutputCollector collector;
-        private String[] sentences = {
-                "my dog has fleas",
-                "i like cold beverages",
-                "the dog ate my homework",
-                "don't have a cow man",
-                "i don't think i like fleas"
-        };
-        private int index = 0;
-        private int count = 0;
-        private long total = 0L;
-
-        public void declareOutputFields(OutputFieldsDeclarer declarer) {
-            declarer.declare(new Fields("sentence", "timestamp"));
-        }
-
-        public void open(Map config, TopologyContext context,
-                         SpoutOutputCollector collector) {
-            this.collector = collector;
-            this.pending = new ConcurrentHashMap<UUID, Values>();
-        }
-
-        public void nextTuple() {
-            Values values = new Values(sentences[index], System.currentTimeMillis());
-            UUID msgId = UUID.randomUUID();
-            this.pending.put(msgId, values);
-            this.collector.emit(values, msgId);
-            index++;
-            if (index >= sentences.length) {
-                index = 0;
-            }
-            count++;
-            total++;
-            if (count > 20000) {
-                count = 0;
-                System.out.println("Pending count: " + this.pending.size() + ", total: " + this.total);
-            }
-            Thread.yield();
-        }
-
-        public void ack(Object msgId) {
-            this.pending.remove(msgId);
-        }
-
-        public void fail(Object msgId) {
-            System.out.println("**** RESENDING FAILED TUPLE");
-            this.collector.emit(this.pending.get(msgId), msgId);
-        }
-    }
 }

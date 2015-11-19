@@ -96,13 +96,13 @@ public abstract class Uploader<T> implements Serializable {
      * of the upload is returned as the result
      * @throws IOException
      */
-    public abstract ListenableFuture<Boolean> upload(String bucketName, String name,
+    public abstract ListenableFuture<Void> upload(String bucketName, String name,
           InputStream input, ObjectMetadata meta) throws IOException;
 
     /**
      * By default the key is ignored, but some implementations might need that information
      */
-    public ListenableFuture<Boolean> upload(T key, String bucketName, String name, InputStream
+    public ListenableFuture<Void> upload(T key, String bucketName, String name, InputStream
           input, ObjectMetadata meta) throws IOException{
         return this.upload(bucketName, name, input, meta);
     }
@@ -116,7 +116,7 @@ public abstract class Uploader<T> implements Serializable {
     }
 
     @VisibleForTesting
-    public void setClient(AmazonS3 amazonS3Client) {
+    public void setClientForTesting(AmazonS3 amazonS3Client) {
         this.client =amazonS3Client;
     }
 }

@@ -1,11 +1,10 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -15,25 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.storm.s3.output.upload;
-
+package org.apache.storm.s3.upload;
 
 import org.apache.storm.guava.util.concurrent.Futures;
 import org.apache.storm.guava.util.concurrent.ListenableFuture;
+import org.apache.storm.s3.output.upload.Uploader;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
-public class PutRequestUploader extends Uploader {
+/**
+ * Uploader that doesn't do any work
+ */
+public class NoOpUploader extends Uploader {
+    @Override
+    public void prepare(Map conf) {
+        //noop
+    }
+
+    @Override
+    public void ensureBucketExists(String bucket) {
+        //noop
+    }
 
     @Override
     public ListenableFuture<Void> upload(String bucketName, String name, InputStream input,
           ObjectMetadata meta) throws IOException {
-        client.putObject(new PutObjectRequest(bucketName, name, input, meta));
         return Futures.immediateFuture(null);
     }
-
 }

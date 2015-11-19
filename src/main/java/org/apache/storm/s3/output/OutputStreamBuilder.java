@@ -17,7 +17,7 @@
 package org.apache.storm.s3.output;
 
 import org.apache.storm.s3.format.AbstractFileNameFormat;
-import org.apache.storm.s3.format.S3Output;
+import org.apache.storm.s3.format.S3OutputConfiguration;
 import org.apache.storm.s3.output.upload.Uploader;
 
 import java.io.IOException;
@@ -32,10 +32,10 @@ public class OutputStreamBuilder {
   public static final String ENCODING_KEY = "CONTENT_ENCODING";
   private final Uploader uploader;
   private final AbstractFileNameFormat format;
-  private final S3Output s3;
+  private final S3OutputConfiguration s3;
   private String identifier = "";
 
-  public OutputStreamBuilder(Uploader uploader, S3Output s3Info, String identifier,
+  public OutputStreamBuilder(Uploader uploader, S3OutputConfiguration s3Info, String identifier,
       AbstractFileNameFormat
           fileNameFormat) {
     this.uploader = uploader;

@@ -21,12 +21,13 @@ import org.apache.storm.guava.util.concurrent.ListenableFuture;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Tuple;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.concurrent.ExecutionException;
 
 /**
  * Manages the actual work of acking tuples back to the collector
  */
-public abstract class TupleAckManager {
+public abstract class TupleAckManager implements Serializable {
 
     protected OutputCollector collector;
 

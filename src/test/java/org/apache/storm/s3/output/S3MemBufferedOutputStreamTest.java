@@ -44,7 +44,7 @@ public class S3MemBufferedOutputStreamTest {
         String bucketName = S3SFileUtils.getBucket(client);
         TransferManager tx = new TransferManager(client);
         Uploader uploader = new PutRequestUploader();
-        uploader.setClient(tx.getAmazonS3Client());
+        uploader.setClientForTesting(tx.getAmazonS3Client());
         ContentEncoding encoding = ContentEncoding.NONE;
         OutputStream outputStream = new S3MemBufferedOutputStream(uploader, bucketName,
               new DefaultFileNameFormat().withPrefix("test"), "text/plain", encoding, "id", 0);

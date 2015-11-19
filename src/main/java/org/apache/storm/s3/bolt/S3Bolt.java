@@ -24,7 +24,8 @@ import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.DefaultFileNameFormat;
 import org.apache.storm.s3.format.DelimitedRecordFormat;
 import org.apache.storm.s3.format.RecordFormat;
-import org.apache.storm.s3.format.S3Output;
+import org.apache.storm.s3.format.S3OutputConfiguration;
+import org.apache.storm.s3.output.S3Output;
 import org.apache.storm.s3.output.upload.BlockingTransferManagerUploader;
 import org.apache.storm.s3.output.upload.Uploader;
 import org.apache.storm.s3.rotation.FileRotationPolicy;
@@ -40,14 +41,13 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 public class S3Bolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(S3Bolt.class);
 
-    private org.apache.storm.s3.output.S3Output s3;
+    private S3Output s3;
     private OutputCollector collector;
 
     // properties we can set and their defaults
@@ -55,11 +55,11 @@ public class S3Bolt extends BaseRichBolt {
         FileSizeRotationPolicy.Units.MB);
     private AbstractFileNameFormat fileNameFormat = new DefaultFileNameFormat();
     private RecordFormat recordFormat = new DelimitedRecordFormat();
-    private TupleAckManager ackPolicy = new AckOnRotateManager();
+    private TupleAckManager ackManager = new AckOnRotateManager();
     private Uploader uploader = new BlockingTransferManagerUploader();
 
     // no defaults for the s3 information
-    private S3Output s3Location;
+    private S3OutputConfiguration s3Location;
 
     private int tickFrequencySecs = -1;
 
@@ -75,6 +75,7 @@ public class S3Bolt extends BaseRichBolt {
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
+        this.ackManager.prepare(collector);
 
         // do any last preparation for the stored properties
         rotationPolicy.prepare(stormConf);
@@ -83,7 +84,7 @@ public class S3Bolt extends BaseRichBolt {
         s3Location.prepare(stormConf);
         uploader.prepare(stormConf);
 
-        s3 = new org.apache.storm.s3.output.S3Output(rotationPolicy, fileNameFormat,
+        s3 = new S3Output(rotationPolicy, fileNameFormat,
               recordFormat, s3Location, uploader);
         String componentId = context.getThisComponentId();
         int taskId = context.getThisTaskId();
@@ -101,10 +102,10 @@ public class S3Bolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         try {
             ListenableFuture status = s3.write(tuple);
-            this.ackPolicy.handleAck(tuple, status);
+            this.ackManager.handleAck(tuple, status);
         } catch (IOException e) {
             LOG.warn("write/sync failed.", e);
-            this.ackPolicy.fail(tuple);
+            this.ackManager.fail(tuple);
         }
     }
 
@@ -125,12 +126,12 @@ public class S3Bolt extends BaseRichBolt {
         this.recordFormat = recordFormat;
     }
 
-    public void setS3Location(S3Output s3Location) {
+    public void setS3Location(S3OutputConfiguration s3Location) {
         this.s3Location = s3Location;
     }
 
     public void setTupleAckPolicy(TupleAckManager ackPolicy){
-        this.ackPolicy = ackPolicy;
+        this.ackManager = ackPolicy;
     }
 
     public void setUploader(Uploader uploader){
