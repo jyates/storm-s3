@@ -33,7 +33,6 @@ import org.junit.rules.TestName;
 import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -68,7 +67,7 @@ public class LocalS3TopologyTest {
 
         // use the in memory uploader
         SpyingUploader uploader = new SpyingUploader();
-        uploader.setNameSpace(topology);
+        uploader.withNameSpace(topology);
         uploader.withDelegate(new NoOpUploader());
         bolt.setUploader(uploader);
 

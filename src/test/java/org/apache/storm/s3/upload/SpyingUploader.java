@@ -22,6 +22,9 @@ import org.apache.storm.guava.util.concurrent.Futures;
 import org.apache.storm.guava.util.concurrent.ListenableFuture;
 import org.apache.storm.s3.output.upload.Uploader;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -32,16 +35,20 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Uploader that just stores the 'files' in memory. Acts as a <b>blocking uploader</b> for each file
  */
 public class SpyingUploader extends Uploader {
-    private static Map<String, Map<String, List<Upload>>> namespacedUploads = new HashMap<>();
+    private static final Logger LOG = LoggerFactory.getLogger(SpyingUploader.class);
+    private static Map<String, Map<String, List<Upload>>> namespacedUploads = new
+          ConcurrentHashMap<>();
 
     private Map<String, List<Upload>> uploads;
     private String nameSpace;
     private Uploader delegate;
+    private static Map<String, Boolean> blocks;
 
     public void withDelegate(Uploader delegate) {
         this.delegate = delegate;
@@ -50,6 +57,7 @@ public class SpyingUploader extends Uploader {
     @Override
     public void prepare(Map conf) {
         uploads = new HashMap<>();
+        blocks = new ConcurrentHashMap<>();
         namespacedUploads.put(nameSpace, uploads);
         delegate.prepare(conf);
     }
@@ -62,14 +70,18 @@ public class SpyingUploader extends Uploader {
     @Override
     public ListenableFuture<Void> upload(String bucketName, String name, InputStream input,
           ObjectMetadata meta) throws IOException {
+        if (blocks.get(this.nameSpace) != null) {
+            return Futures.immediateFuture(null);
+        }
+
         // copy the stream
         List<Upload> files = this.uploads.get(bucketName);
         if (files == null) {
             files = new ArrayList<>();
             this.uploads.put(bucketName, files);
         }
-        final List<Upload> link = files;
         Upload up = new Upload(name, input, meta);
+        files.add(up);
         // send the stream on to the delegate
         ListenableFuture<Void> result =
               delegate.upload(bucketName, name, new ByteArrayInputStream(up.object), meta);
@@ -78,13 +90,11 @@ public class SpyingUploader extends Uploader {
               new org.apache.storm.guava.util.concurrent.FutureCallback<Void>() {
                   @Override
                   public void onSuccess(Void aVoid) {
-                      link.add(up);
                   }
 
                   @Override
                   public void onFailure(Throwable throwable) {
                       up.fail();
-                      link.add(up);
                   }
               });
         return result;
@@ -94,20 +104,33 @@ public class SpyingUploader extends Uploader {
         return namespacedUploads.get(nameSpace);
     }
 
-    public static void waitForFileCount(String namespace, String bucketName, int files)
+    public static void waitForFileCount(String namespace, String bucketName, int fileCount)
           throws InterruptedException {
         //This is lazy - we could do this via a callback, but that means adding a listener and a
         // latch.
         while (true) {
             Map<String, List<Upload>> uploads = getUploads(namespace);
-            if (uploads != null && uploads.size() == 1 && uploads.get(bucketName).size() > 3) {
-                break;
+            if (uploads != null && uploads.size() == 1){
+                List<Upload> files = uploads.get(bucketName);
+                if(files != null && files.size() > fileCount) {
+                    break;
+                }
             }
-            Thread.sleep(10);
+                Thread.sleep(10);
         }
+        LOG.info("Found at least {} files in {}/{}", fileCount, namespace, bucketName);
     }
 
-    public void setNameSpace(String nameSpace) {
+    /**
+     * Storm can be slow to close topologies, so block any more files being created in S3
+     *
+     * @param nameSpace
+     */
+    public static void block(String nameSpace) {
+        blocks.put(nameSpace, true);
+    }
+
+    public void withNameSpace(String nameSpace) {
         this.nameSpace = nameSpace;
     }
 

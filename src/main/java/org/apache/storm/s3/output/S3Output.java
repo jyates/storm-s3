@@ -73,9 +73,14 @@ public class S3Output implements Serializable {
     public ListenableFuture write(Tuple tuple) throws IOException {
         boolean rotate = isTickTuple(tuple);
         if (!rotate) {
+            if(LOG.isTraceEnabled()){
+                LOG.trace("Got tuple: "+tuple);
+            }
             byte[] bytes = recordFormat.format(tuple);
             out.write(bytes);
             rotate = fileRotation.mark(bytes.length);
+        }else{
+            LOG.info("Rotating file because of time tick!");
         }
 
         ListenableFuture<Void> status = null;

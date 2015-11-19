@@ -25,9 +25,12 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Map;
 
 public abstract class Uploader<T> implements Serializable {
@@ -47,6 +51,7 @@ public abstract class Uploader<T> implements Serializable {
     private int proxyPort = -1;
     private String proxyHost;
     private String endpoint;
+    private boolean ephemeralBucket;
 
 
     /**
@@ -54,7 +59,10 @@ public abstract class Uploader<T> implements Serializable {
      * @param conf configuration to parse
      */
     public void prepare(Map conf){
-        AWSCredentialsProvider provider = new DefaultAWSCredentialsProviderChain();
+        AWSCredentialsProvider provider =
+              new AWSCredentialsProviderChain(
+                    new DefaultAWSCredentialsProviderChain(),
+                    new ProfileCredentialsProvider("aws-testing"));
         AWSCredentials credentials = provider.getCredentials();
         ClientConfiguration config = new ClientConfiguration().withProtocol(protocol);
         config.withProxyHost(proxyHost);
@@ -112,11 +120,30 @@ public abstract class Uploader<T> implements Serializable {
         if (!client.doesBucketExist(bucket)) {
             client.createBucket(bucket);
             LOG.info("Creating bucket {}", bucket);
+
+            // if the bucket should delete files after a day, for testing
+            if(ephemeralBucket){
+                BucketLifecycleConfiguration.Rule expire = new BucketLifecycleConfiguration.Rule
+                      ().withId("Expire test bucket").withExpirationInDays(1).withStatus
+                      (BucketLifecycleConfiguration.ENABLED.toString());
+                BucketLifecycleConfiguration configuration =
+                      new BucketLifecycleConfiguration()
+                            .withRules(Arrays.asList(expire));
+
+                // Save configuration.
+                client.setBucketLifecycleConfiguration(bucket, configuration);
+
+            }
         }
     }
 
     @VisibleForTesting
     public void setClientForTesting(AmazonS3 amazonS3Client) {
         this.client =amazonS3Client;
+    }
+
+    @VisibleForTesting
+    public void setEphemeralBucketForTesting(boolean retentionTime) {
+        this.ephemeralBucket = retentionTime;
     }
 }

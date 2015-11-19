@@ -48,6 +48,7 @@ public class NonBlockingTransferManagerUploader extends Uploader {
     public ListenableFuture<Void> upload(String bucketName, String name, InputStream input,
           ObjectMetadata meta) throws IOException {
         SettableFuture<Void> future = SettableFuture.create();
+        LOG.info("Starting upload, bucket={}, key={}", bucketName, name);
         final Upload up = tx.upload(bucketName, name, input, meta);
         up.addProgressListener((ProgressEvent progressEvent) -> {
             switch (progressEvent.getEventType()) {
