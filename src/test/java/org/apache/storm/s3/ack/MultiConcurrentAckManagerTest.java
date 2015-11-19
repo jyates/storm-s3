@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.storm.s3;
+package org.apache.storm.s3.ack;
 
 import org.apache.storm.guava.util.concurrent.Futures;
 import org.apache.storm.guava.util.concurrent.SettableFuture;
-import org.apache.storm.s3.ack.MultiConcurrentUploadAckManager;
 
 import org.junit.Test;
 import org.mockito.Mockito;

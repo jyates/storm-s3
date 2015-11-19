@@ -16,17 +16,21 @@
  */
 package org.apache.storm.s3.ack;
 
+import org.apache.storm.guava.util.concurrent.ListenableFuture;
+
 import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Tuple;
+import java.io.IOException;
 
 /**
  * Acks all tuples immediately
  */
 public class ImmediateAckManager extends TupleAckManager {
 
+
     @Override
-    public void handleAck(Tuple tuple, boolean committed) {
-        collector.ack(tuple);
+    public void handleAck(Tuple tuple, ListenableFuture<Void> committed) throws IOException {
+        this.collector.ack(tuple);
     }
 
     @Override
