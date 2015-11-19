@@ -17,6 +17,7 @@
 package org.apache.storm.s3.format;
 
 import org.apache.storm.guava.base.Preconditions;
+import org.apache.storm.s3.output.ContentEncoding;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -24,23 +25,29 @@ import java.util.Map;
 /**
  *
  */
-public class S3OutputLocation implements Serializable {
+public class S3Output implements Serializable {
   private String bucket;
-  private String contentType;
+  private String contentType = "text/plain";
   private String path;
+  private ContentEncoding encoding = ContentEncoding.NONE;
 
-  public S3OutputLocation setBucket(String bucket) {
+  public S3Output setBucket(String bucket) {
     this.bucket = bucket;
     return this;
   }
 
-  public S3OutputLocation setContentType(String contentType) {
+  public S3Output setContentType(String contentType) {
     this.contentType = contentType;
     return this;
   }
 
-  public S3OutputLocation withPath(String path) {
+  public S3Output withPath(String path) {
     this.path = path;
+    return this;
+  }
+
+  public S3Output withContentEncoding(ContentEncoding encoding){
+    this.encoding = encoding;
     return this;
   }
 
@@ -54,5 +61,9 @@ public class S3OutputLocation implements Serializable {
 
   public String getContentType() {
     return contentType;
+  }
+
+  public ContentEncoding getEncoding() {
+    return this.encoding;
   }
 }

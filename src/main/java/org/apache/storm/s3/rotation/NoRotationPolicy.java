@@ -17,6 +17,8 @@
  */
 package org.apache.storm.s3.rotation;
 
+import java.util.Map;
+
 /**
  * File rotation policy that will never rotate...
  * Just one big file. Intended for testing purposes.
@@ -30,5 +32,10 @@ public class NoRotationPolicy implements FileRotationPolicy {
 
     @Override
     public void reset() {
+    }
+
+    @Override
+    public void prepare(Map stormConf) {
+        //noop
     }
 }

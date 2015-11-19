@@ -17,8 +17,6 @@
  */
 package org.apache.storm.s3.format;
 
-import org.apache.storm.s3.output.trident.FileOutputFactory;
-
 import java.io.Serializable;
 import java.util.Map;
 

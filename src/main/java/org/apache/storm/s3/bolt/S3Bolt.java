@@ -27,8 +27,7 @@ import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.DefaultFileNameFormat;
 import org.apache.storm.s3.format.DelimitedRecordFormat;
 import org.apache.storm.s3.format.RecordFormat;
-import org.apache.storm.s3.format.S3OutputLocation;
-import org.apache.storm.s3.output.S3Output;
+import org.apache.storm.s3.format.S3Output;
 import org.apache.storm.s3.rotation.FileRotationPolicy;
 import org.apache.storm.s3.rotation.FileSizeRotationPolicy;
 
@@ -42,7 +41,7 @@ public class S3Bolt extends BaseRichBolt {
 
     private static final Logger LOG = LoggerFactory.getLogger(S3Bolt.class);
 
-    private S3Output s3;
+    private org.apache.storm.s3.output.S3Output s3;
     private OutputCollector collector;
 
     // properties we can set and their defaults
@@ -51,7 +50,7 @@ public class S3Bolt extends BaseRichBolt {
     private AbstractFileNameFormat fileNameFormat = new DefaultFileNameFormat();
     private RecordFormat recordFormat = new DelimitedRecordFormat();
     // no defaults for the s3 information
-    private S3OutputLocation s3Location;
+    private S3Output s3Location;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
@@ -63,7 +62,7 @@ public class S3Bolt extends BaseRichBolt {
         recordFormat.prepare(stormConf);
         s3Location.prepare(stormConf);
 
-        s3 = new S3Output(rotationPolicy, fileNameFormat, recordFormat, s3Location);
+        s3 = new org.apache.storm.s3.output.S3Output(rotationPolicy, fileNameFormat, recordFormat, s3Location);
         String componentId = context.getThisComponentId();
         int taskId = context.getThisTaskId();
         s3.withIdentifier(componentId + "-" + taskId);
@@ -104,7 +103,7 @@ public class S3Bolt extends BaseRichBolt {
         this.recordFormat = recordFormat;
     }
 
-    public void setS3Location(S3OutputLocation s3Location) {
+    public void setS3Location(S3Output s3Location) {
         this.s3Location = s3Location;
     }
 }

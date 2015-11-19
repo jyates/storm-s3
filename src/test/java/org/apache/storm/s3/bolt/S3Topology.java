@@ -21,12 +21,10 @@ import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.DefaultFileNameFormat;
 import org.apache.storm.s3.format.DelimitedRecordFormat;
 import org.apache.storm.s3.format.RecordFormat;
-import org.apache.storm.s3.format.S3OutputLocation;
-import org.apache.storm.s3.output.S3Configuration;
+import org.apache.storm.s3.format.S3Output;
 import org.apache.storm.s3.rotation.FileRotationPolicy;
 import org.apache.storm.s3.rotation.FileSizeRotationPolicy;
 
-import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -41,8 +39,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static org.apache.storm.s3.output.S3Configuration.*;
 
 public class S3Topology {
     static final String SENTENCE_SPOUT_ID = "sentence-spout";
@@ -60,8 +56,8 @@ public class S3Topology {
         bolt.setFileNameFormat(format);
         RecordFormat recordFormat = new DelimitedRecordFormat();
         bolt.setRecordFormat(recordFormat);
-        S3OutputLocation s3 =
-            new S3OutputLocation().setBucket("test-bucket")
+        S3Output s3 =
+            new S3Output().setBucket("test-bucket")
                                   .setContentType("text/plain")
                                   .withPath("foo");
         bolt.setS3Location(s3);

@@ -21,6 +21,8 @@ package org.apache.storm.s3.rotation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 /**
  * File rotation policy that will rotate files when a certain
  * file size is reached.
@@ -78,6 +80,10 @@ public class FileSizeRotationPolicy implements FileRotationPolicy {
         bytesWritten = 0;
     }
 
+    @Override
+    public void prepare(Map stormConf) {
+        //  noop
+    }
 
 
 }
