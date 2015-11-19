@@ -15,26 +15,73 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.storm.s3.output;
+package org.apache.storm.s3.output.upload;
 
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
+import java.util.Map;
 
-public abstract class Uploader<T> {
+public abstract class Uploader<T> implements Serializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(Uploader.class);
 
     protected AmazonS3 client;
+    private Protocol protocol = Protocol.HTTPS;
+    // use the same defaults as the ClientConfiguration to save extra 'is set' checks in prepare
+    private int proxyPort = -1;
+    private String proxyHost;
+    private String endpoint;
 
-    public Uploader(AmazonS3 client) {
-        this.client = client;
+
+    /**
+     * Setu up the AmazonS3 client and any last minute configurations
+     * @param conf configuration to parse
+     */
+    public void prepare(Map conf){
+        AWSCredentialsProvider provider = new DefaultAWSCredentialsProviderChain();
+        AWSCredentials credentials = provider.getCredentials();
+        ClientConfiguration config = new ClientConfiguration().withProtocol(protocol);
+        config.withProxyHost(proxyHost);
+        config.withProxyPort(proxyPort);
+        this.client = new AmazonS3Client(credentials, config);
+        if(endpoint != null) {
+            client.setEndpoint(endpoint);
+        }
     }
+
+    public Uploader withProtocol(Protocol protocol){
+        this.protocol = protocol;
+        return this;
+    }
+
+    public Uploader withProxyPort(int proxyPort){
+        this.proxyPort = proxyPort;
+        return this;
+    }
+
+    public Uploader withProxyHost(String host){
+        this.proxyHost = host;
+        return this;
+    }
+
+    public Uploader withEndpoint(String endpoint){
+        this.endpoint = endpoint;
+        return this;
+    }
+
 
     public abstract void upload(String bucketName, String name, InputStream input, ObjectMetadata meta) throws IOException;
 
@@ -52,6 +99,4 @@ public abstract class Uploader<T> {
             LOG.info("Creating bucket {}", bucket);
         }
     }
-
-
 }

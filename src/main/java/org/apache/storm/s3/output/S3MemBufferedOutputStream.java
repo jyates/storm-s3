@@ -18,6 +18,7 @@
 package org.apache.storm.s3.output;
 
 import org.apache.storm.s3.format.AbstractFileNameFormat;
+import org.apache.storm.s3.output.upload.Uploader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

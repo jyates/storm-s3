@@ -17,6 +17,11 @@
  */
 package org.apache.storm.s3.output;
 
+import org.apache.storm.s3.output.upload.BlockingTransferManagerUploader;
+import org.apache.storm.s3.output.upload.PutRequestUploader;
+import org.apache.storm.s3.output.upload.Uploader;
+import org.apache.storm.s3.output.upload.UploaderFactory;
+
 import backtype.storm.Config;
 import org.junit.Test;
 
@@ -33,7 +38,7 @@ public class UploaderFactoryTest {
     @Test
     public void testTransferManagerUploader() throws Exception {
         Config config = new Config();
-        config.put(UploaderFactory.UPLOADER_CLASS, "org.apache.storm.s3.output.BlockingTransferManagerUploader");
+        config.put(UploaderFactory.UPLOADER_CLASS, "org.apache.storm.s3.output.upload.BlockingTransferManagerUploader");
         Uploader uploader = UploaderFactory.buildUploader(config);
         assertTrue(uploader instanceof BlockingTransferManagerUploader);
     }

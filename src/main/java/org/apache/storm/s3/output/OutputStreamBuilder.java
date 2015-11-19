@@ -18,6 +18,7 @@ package org.apache.storm.s3.output;
 
 import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.S3Output;
+import org.apache.storm.s3.output.upload.Uploader;
 
 import java.io.IOException;
 import java.io.OutputStream;

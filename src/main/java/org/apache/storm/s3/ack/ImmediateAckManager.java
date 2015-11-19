@@ -16,14 +16,27 @@
  */
 package org.apache.storm.s3.ack;
 
+import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Tuple;
 
 /**
- *
+ * Acks all tuples immediately
  */
-public class AlwaysAckPolicy implements TupleAckPolicy{
+public class ImmediateAckManager implements TupleAckManager {
+    private OutputCollector collector;
+
     @Override
-    public boolean shouldAck(Tuple tuple, boolean rotate) {
-        return true;
+    public void prepare(OutputCollector collector) {
+        this.collector = collector;
+    }
+
+    @Override
+    public void handleAck(Tuple tuple, boolean committed) {
+        collector.ack(tuple);
+    }
+
+    @Override
+    public void fail(Tuple tuple) {
+        this.collector.fail(tuple);
     }
 }

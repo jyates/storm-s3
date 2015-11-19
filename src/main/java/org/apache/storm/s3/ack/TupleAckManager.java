@@ -16,14 +16,30 @@
  */
 package org.apache.storm.s3.ack;
 
+import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Tuple;
 
 /**
- *
+ * Manages the actual work of acking tuples back to the collector
  */
-public class AckOnRotatePolicy implements TupleAckPolicy {
-    @Override
-    public boolean shouldAck(Tuple tuple, boolean rotate) {
-        return rotate;
-    }
+public interface TupleAckManager {
+
+    /**
+     * Finish setting up the manager with the output collector
+     * @param collector to use when acking/failing tuples
+     */
+    void prepare(OutputCollector collector);
+
+    /**
+     * @param committed if the file was committed to the output
+     * @param tuple tbe tuple to ack
+     * @return <tt>true</tt> if this tuple should be acked
+     */
+    void handleAck(Tuple tuple, boolean committed);
+
+    /**
+     * Got a failure for the given tuple
+     * @param tuple
+     */
+    void fail(Tuple tuple);
 }

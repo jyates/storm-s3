@@ -15,39 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.storm.s3.output;
+package org.apache.storm.s3.output.upload;
 
+
+import org.apache.storm.s3.output.upload.Uploader;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.Upload;
-import com.amazonaws.services.s3.transfer.model.UploadResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-public class BlockingTransferManagerUploader extends Uploader {
-
-    private static final Logger LOG = LoggerFactory.getLogger(BlockingTransferManagerUploader.class);
-
-    private TransferManager tx;
-
-    public BlockingTransferManagerUploader(AmazonS3 client){
-        super(client);
-        this.tx = new TransferManager(client);
-    }
+public class PutRequestUploader extends Uploader {
 
     @Override
     public void upload(String bucketName, String name, InputStream input, ObjectMetadata meta) throws IOException {
-        final Upload myUpload = tx.upload(bucketName, name, input, meta);
-        try {
-            UploadResult uploadResult = myUpload.waitForUploadResult();
-            LOG.info("Upload completed, bucket={}, key={}", uploadResult.getBucketName(), uploadResult.getKey());
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        }
+        client.putObject(new PutObjectRequest(bucketName, name, input, meta));
     }
+
 }

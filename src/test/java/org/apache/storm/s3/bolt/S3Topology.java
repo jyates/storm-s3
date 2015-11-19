@@ -22,6 +22,9 @@ import org.apache.storm.s3.format.DefaultFileNameFormat;
 import org.apache.storm.s3.format.DelimitedRecordFormat;
 import org.apache.storm.s3.format.RecordFormat;
 import org.apache.storm.s3.format.S3Output;
+import org.apache.storm.s3.output.upload.BlockingTransferManagerUploader;
+import org.apache.storm.s3.output.upload.PutRequestUploader;
+import org.apache.storm.s3.output.upload.Uploader;
 import org.apache.storm.s3.rotation.FileRotationPolicy;
 import org.apache.storm.s3.rotation.FileSizeRotationPolicy;
 
@@ -56,6 +59,10 @@ public class S3Topology {
         bolt.setFileNameFormat(format);
         RecordFormat recordFormat = new DelimitedRecordFormat();
         bolt.setRecordFormat(recordFormat);
+
+        Uploader uploader = new BlockingTransferManagerUploader();
+        bolt.setUploader(uploader);
+
         S3Output s3 =
             new S3Output().setBucket("test-bucket")
                                   .setContentType("text/plain")

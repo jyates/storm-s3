@@ -18,9 +18,9 @@
 package org.apache.storm.s3.output;
 
 
-import org.apache.storm.s3.ack.TupleAckPolicy;
 import org.apache.storm.s3.format.AbstractFileNameFormat;
 import org.apache.storm.s3.format.RecordFormat;
+import org.apache.storm.s3.output.upload.Uploader;
 import org.apache.storm.s3.rotation.FileRotationPolicy;
 
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ public class S3Output implements Serializable {
     private final AbstractFileNameFormat format;
     private final RecordFormat recordFormat;
     private final org.apache.storm.s3.format.S3Output s3;
-    private final TupleAckPolicy ackPolicy;
+    private final Uploader uploader;
     private OutputStreamBuilder streamBuilder;
 
     private int rotation = 0;
@@ -47,12 +47,12 @@ public class S3Output implements Serializable {
     private String identifier;
 
     public S3Output(FileRotationPolicy rotationPolicy, AbstractFileNameFormat fileNameFormat,
-        RecordFormat recordFormat, org.apache.storm.s3.format.S3Output s3Info, TupleAckPolicy ackPolicy) {
+        RecordFormat recordFormat, org.apache.storm.s3.format.S3Output s3Info, Uploader uploader) {
         this.fileRotation = rotationPolicy;
         this.format = fileNameFormat;
         this.recordFormat = recordFormat;
         this.s3 = s3Info;
-        this.ackPolicy = ackPolicy;
+        this.uploader = uploader;
     }
 
     public S3Output withIdentifier(String identifier) {
@@ -62,7 +62,6 @@ public class S3Output implements Serializable {
 
     public void prepare(Map conf) throws IOException {
         LOG.info("Preparing S3 Output for bucket {}", s3.getBucket());
-        Uploader uploader = UploaderFactory.buildUploader(conf);
         uploader.ensureBucketExists(s3.getBucket());
         LOG.info("Prepared S3 Output for bucket {} ", s3.getBucket());
         this.streamBuilder = new OutputStreamBuilder(uploader, s3, identifier, format);
@@ -77,7 +76,7 @@ public class S3Output implements Serializable {
             rotateOutputFile();
             fileRotation.reset();
         }
-        return this.ackPolicy.shouldAck(tuple, rotate);
+        return rotate;
     }
 
     private void rotateOutputFile() throws IOException {

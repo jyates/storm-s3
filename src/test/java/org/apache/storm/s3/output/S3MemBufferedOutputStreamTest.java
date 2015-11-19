@@ -20,21 +20,16 @@ package org.apache.storm.s3.output;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.TransferManager;
 
 import org.apache.storm.s3.format.DefaultFileNameFormat;
-import org.apache.storm.s3.output.PutRequestUploader;
-import org.apache.storm.s3.output.S3MemBufferedOutputStream;
-import org.apache.storm.s3.output.Uploader;
+import org.apache.storm.s3.output.upload.PutRequestUploader;
+import org.apache.storm.s3.output.upload.Uploader;
 
 import org.junit.Test;
 
 import java.io.*;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
